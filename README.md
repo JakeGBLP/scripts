@@ -1,2 +1,2 @@
 # scripts
-Scripts I made, this acts as a sort of portfolio.
+Non-Comprehensive collection of scripts I made
