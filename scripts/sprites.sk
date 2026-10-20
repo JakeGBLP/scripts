@@ -1,0 +1,25 @@
+import:
+  net.kyori.adventure.text.object.ObjectContents
+  net.kyori.adventure.text.Component
+  net.kyori.adventure.text.format.NamedTextColor
+  net.kyori.adventure.text.format.TextColor
+  com.shanebeestudios.skbee.api.wrapper.ComponentWrapper 
+  org.bukkit.Bukkit
+  java.net.URI
+
+command sprite:
+  trigger:
+    set {_profile} to Bukkit.createProfile("steve")
+    set {_textures} to {_profile}.getTextures()
+    set {_urlString} to "http://textures.minecraft.net/texture/435317a956703f929efd2013565675feccb60bccd1c6e5a8ad4b915539b7a54f"
+    {_textures}.setSkin(new URI({_urlString}).toURL())
+    {_profile}.setTextures({_textures})
+    set {_whiteSquare} to Component.object(ObjectContents.playerHead({_profile}))
+    set {_startingColor} to NamedTextColor.GREEN
+    set {_endingColor} to NamedTextColor.RED
+    set {_finalComponent} to Component.empty()
+    loop 40 times:
+      set {_finalComponent} to {_finalComponent}.append({_whiteSquare}.color(TextColor.lerp(loop-number/40, {_startingColor}, {_endingColor})))
+    set {_squareComponent} to ComponentWrapper.fromComponent({_whiteSquare})
+    set {_minimessage} to minimessage from (join "<gradient:#4287f5:#d40038:#ffa857>" and ("<square>" repeated 30 times)) with resolver("square", {_squareComponent}, false)
+    send component {_minimessage} to player
