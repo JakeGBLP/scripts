@@ -1,0 +1,218 @@
+import:
+  org.bukkit.map.MinecraftFont
+
+on load:
+  clear {-LeaderboardConfig::*} and {-Leaderboard::*}
+
+  set {-LeaderboardConfig::progressBarBackground} to gray concrete[]
+  set {-LeaderboardConfig::progressBarForeground} to white concrete[]
+  set {-LeaderboardConfig::nameColor} to "white"
+  set {-LeaderboardConfig::dividerColor} to "gray"
+  set {-LeaderboardConfig::divider} to "ᴏ"
+  set {-LeaderboardConfig::dividerWidth} to 5
+  set {-LeaderboardConfig::headSpriteWidth} to 8
+  set {-LeaderboardConfig::leaderDotsColor} to "gray"
+  set {-LeaderboardConfig::rankColors::*} to "#00d0ff", "#ffff34" and "#f2995a"
+  set {-LeaderboardConfig::defaultRankColor} to "gray"
+  set {-LeaderboardConfig::maxPixelWidth} to 225
+
+  set {-Leaderboard} to true
+
+  set {-Leaderboard::money} to true
+  set {-Leaderboard::money::retrievalMethod} to "variable"
+  set {-Leaderboard::money::retrievalData} to "money"
+  set {-Leaderboard::money::color} to "#FFD263"
+  set {-Leaderboard::money::icon} to " ⛃"
+  set {-Leaderboard::money::iconWidth} to 13 # if it includes a space you need to count it in + the 1 pixel in between, in this case the coins symbol is 7 pixels, the space is 5 and then there's 1 pixel in between
+  set {-Leaderboard::money::title} to "TOP MONEY"
+  set {-Leaderboard::money::titleColor} to "#72ee2a"
+  set {-Leaderboard::money::duration} to 5 seconds
+
+  set {-Leaderboard::level} to true
+  set {-Leaderboard::level::retrievalMethod} to "variable"
+  set {-Leaderboard::level::retrievalData} to "level"
+  set {-Leaderboard::level::color} to "#2ebdff"
+  set {-Leaderboard::level::icon} to "⭐"
+  set {-Leaderboard::level::iconWidth} to 7
+  set {-Leaderboard::level::title} to "TOP LEVEL"
+  set {-Leaderboard::level::titleColor} to "#307fff"
+  set {-Leaderboard::level::duration} to 10 seconds
+
+  set {-Leaderboard::aura} to true
+  set {-Leaderboard::aura::retrievalMethod} to "variable"
+  set {-Leaderboard::aura::retrievalData} to "aura"
+  set {-Leaderboard::aura::color} to "#e100a5"
+  set {-Leaderboard::aura::icon} to "🔥"
+  set {-Leaderboard::aura::iconWidth} to 7
+  set {-Leaderboard::aura::title} to "TOP AURA"
+  set {-Leaderboard::aura::titleColor} to "#ac00e1"
+  set {-Leaderboard::aura::duration} to 8 seconds
+
+function getTop10(leaderboard: string) :: objects:
+  if {-Leaderboard::%{_leaderboard}%::retrievalMethod} is "variable":
+    loop first 10 elements of (indices of {%{-Leaderboard::%{_leaderboard}%::retrievalData}%::*} in descending order):
+      set {_result::%loop-value%} to {%{-Leaderboard::%{_leaderboard}%::retrievalData}%::%loop-value%}
+  # put other ways to get top 10 here
+
+  return keyed {_result::*}
+
+function getPixelWidth(string: string) :: int:
+  return MinecraftFont.Font.getWidth({_string})
+
+function zero() :: string:
+  return character at codepoint 8204
+
+function easeOutCubic(x: number) :: number:
+  return 1 - (1 - {_x}) ^ 3
+
+function easeInCubic(x: number) :: number:
+  return {_x} ^ 3
+
+
+function constructLeaderboardTitle(display: display, leaderboard: string):
+  set text of {_display} to "<%{-Leaderboard::%{_leaderboard}%::titleColor}%><bold>%{-Leaderboard::%{_leaderboard}%::icon}%"
+  set scale of {_display} to vector(2, 2, 2)
+  set display translation of {_display} to vector(0, 0, 0)
+  set color of {_display} to rgb(0, 0, 0, 0)
+  add drop shadow to text of {_display}
+  wait 2 ticks
+  set scale of {_display} to vector(3.5, 3.5, 3.5)
+  set display translation of {_display} to vector(0, -0.12, 0)
+  set interpolation delay of {_display} to 0 ticks
+  set interpolation duration of {_display} to 4 tick
+  wait 4 ticks
+  set scale of {_display} to vector(2.5, 2.5, 2.5)
+  set display translation of {_display} to vector(0, 0, 0)
+  set interpolation delay of {_display} to 0 ticks
+  set interpolation duration of {_display} to 4 tick
+  set {_remainingTitle} to " %{-Leaderboard::%{_leaderboard}%::title}%"
+  loop length of {_remainingTitle} times:
+    set text of {_display} to join text of {_display} and character at index loop-number of {_remainingTitle}
+    wait 2 ticks
+
+function constructLeaderboardProgressBarBackground(display: display, leaderboard: string):
+  set blockdata of {_display} to {-LeaderboardConfig::progressBarBackground}
+  set display translation of {_display} to vector(-2, 0, 0)
+  set scale of {_display} to vector(4, 0.05, 0.025)
+
+function constructLeaderboardProgressBarForeground(display: display, leaderboard: string):
+  set blockdata of {_display} to {-LeaderboardConfig::progressBarForeground}
+  set display translation of {_display} to vector(-2, 0, 0.025)
+  set scale of {_display} to vector(0, 0.05, 0.025)
+
+function handleProgressBar(location: location, ticks: int, leaderboard: string):
+  if {LeaderboardEntities::progressBarBackground} exists:
+    set {_progressBarBackground} to {LeaderboardEntities::progressBarBackground} parsed as entity
+    teleport {_progressBarBackground} to {_location}
+    constructLeaderboardProgressBarBackground({_progressBarBackground}, {_leaderboard})
+  if {_progressBarBackground} does not exist:
+    spawn block display at {_location}:
+      constructLeaderboardProgressBarBackground(entity, {_leaderboard})
+      set {LeaderboardEntities::progressBarBackground} to uuid of entity
+
+  if {LeaderboardEntities::progressBarForeground} exists:
+    set {_progressBarForeground} to {LeaderboardEntities::progressBarForeground} parsed as entity
+    teleport {_progressBarForeground} to {_location}
+    constructLeaderboardProgressBarForeground({_progressBarForeground}, {_leaderboard})
+  if {_progressBarForeground} does not exist:
+    spawn block display at {_location}:
+      constructLeaderboardProgressBarForeground(entity, {_leaderboard})
+      set {LeaderboardEntities::progressBarForeground} to uuid of entity
+  loop {_ticks} times:
+    set scale of {_progressBarForeground} to vector(loop-number/{_ticks}*4, 0.05, 0.025)
+    set interpolation delay of {_progressBarForeground} to 0 ticks
+    set interpolation duration of {_progressBarForeground} to 1 tick
+    wait 1 tick
+  set scale of {_progressBarForeground} to vector(0, 0.05, 0.025)
+
+function startLeaderboard(location: location):
+  set {_uuid} to random uuid
+  kill {-LeaderboardPlacings::*}
+  set {-CurrentLeaderboard} to {_uuid}
+  set {_location} to location 1/16 forward {_location}
+  set {_titleLocation} to location 2.7 above {_location}
+  set {_progressBarLocation} to location 2.5 above {_location}
+  while {-CurrentLeaderboard} is {_uuid}:
+    if any:
+      {_leaderboard} exists
+      size of {-Leaderboard::*} > 1
+    then:
+      set {_leaderboard} to random element of ((indices of {-Leaderboard::*}) where [input is not {_leaderboard}])
+    else:
+      set {_leaderboard} to first element of indices of {-Leaderboard::*}
+
+    if {LeaderboardEntities::title} exists:
+      set {_title} to {LeaderboardEntities::title} parsed as entity
+      teleport {_title} to {_titleLocation}
+      constructLeaderboardTitle({_title}, {_leaderboard})
+    if {_title} does not exist:
+      spawn text display at {_titleLocation}:
+        constructLeaderboardTitle(entity, {_leaderboard})
+        set {LeaderboardEntities::title} to uuid of entity
+    set {_duration} to {-Leaderboard::%{_leaderboard}%::duration}
+    set {_ticks} to ticks of {_duration}
+    handleProgressBar({_progressBarLocation}, {_ticks}, {_leaderboard})
+    set {_top10::*} to keyed getTop10({_leaderboard})
+    loop indices of {_top10::*} in descending order:
+      set {_rank} to loop-counter-2
+      set {_player} to offlineplayer(loop-value, true)
+      set {_value} to {_top10::%loop-value%}
+      set {_name} to name of {_player}
+      if {_name} doesn't exist:
+        set {_profile} to {_player}.getPlayerProfile()
+        if {_profile}.isComplete() is true:
+          set {_name} to {_profile}.getName()
+      if {_name} doesn't exist:
+        set {_name} to "Player"
+      spawn text display 2.4 above and {_rank}/4 below {_location}:
+        set line width to {-LeaderboardConfig::maxPixelWidth}
+        set color of entity to rgb(0,0,0,0)
+        set scale of entity to vector(1, 1, 1)*0.8
+        add drop shadow to text of entity
+        set {_leftLength} to getPixelWidth("%{_rank}%. ") + 1 + {-LeaderboardConfig::headSpriteWidth} + 1 + getPixelWidth(" ") + 1 + {-LeaderboardConfig::dividerWidth} + 1 + getPixelWidth({_name}) + 1
+        set {_rightLength} to 1 + getPixelWidth("%{_value}%") + {-Leaderboard::%{_leaderboard}%::iconWidth}
+        set {_left} to minimessage from "<color:%{-LeaderboardConfig::rankColors::%{_rank}%} ? {-LeaderboardConfig::defaultRankColor}%>%{_rank}%.</color> <head:%{_player}%> <%{-LeaderboardConfig::dividerColor}%>%{-LeaderboardConfig::divider}% <%{-LeaderboardConfig::nameColor}%>%{_name}%"
+        set {_right} to minimessage from "<%{-Leaderboard::%{_leaderboard}%::color}%>%{_value}%%{-Leaderboard::%{_leaderboard}%::icon}%"
+        set {_middle} to minimessage from join "<%{-LeaderboardConfig::leaderDotsColor}%>" and ("." repeated (({-LeaderboardConfig::maxPixelWidth} - ({_leftLength} + {_rightLength} + 2))/2 - 1) times)
+        entity.text((merge components {_left}, {_middle} and {_right}).getComponent())
+
+        set display translation of entity to vector(-0.6, 0, 0)
+        set {-LeaderboardPlacings::%{_rank}%} to entity
+        run 1 tick later repeating every tick:
+          add 1 to {_progress}
+          set display translation of {-LeaderboardPlacings::%{_rank}%} to vector(easeOutCubic({_progress}/11)*0.6-0.6, 0, 0)
+          set interpolation delay of {-LeaderboardPlacings::%{_rank}%} to 0 ticks
+          set interpolation duration of {-LeaderboardPlacings::%{_rank}%} to 1 tick
+          if {_progress} >= 11:
+            exit 1 loop
+      wait 1 tick 
+    wait {_duration} - 25 ticks
+    run 1 ticks later:
+      set {_placings::*} to keyed {-LeaderboardPlacings::*}
+      for {_count} in 10 times:
+        run 1 tick later repeating every tick:
+          set {_progress} to ({_progress} ? -2 ) + 1
+          set display translation of {_placings::%{_count}%} to vector(easeInCubic({_progress}/12)*0.7, 0, 0)
+          set interpolation delay of {_placings::%{_count}%} to 0 ticks
+          set interpolation duration of {_placings::%{_count}%} to 1 tick
+          if {_progress} >= 10:
+            kill {_placings::%{_count}%}
+            exit 1 loop
+        wait 1 tick
+    wait 15 ticks
+
+function stopLeaderboard():
+  delete {-CurrentLeaderboard}
+
+# wait for the current one to finish, then use /stopleaderboard before starting it again
+command /startLeaderboard:
+  permission: op
+  trigger:
+    set {_location} to location of block above exact target block
+    set yaw of {_location} to round((yaw of vector from {_location} to player)/90)*90
+    startLeaderboard({_location})
+
+command /stopleaderboard:
+  permission: op
+  trigger:
+    stopLeaderboard()
